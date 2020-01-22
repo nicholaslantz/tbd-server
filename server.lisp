@@ -147,7 +147,3 @@
       (if firstp
 	  (join-strings (cdr strs) with nil (concatenate 'string acc (car strs)))
 	  (join-strings (cdr strs) with nil (concatenate 'string acc with (car strs))))))
-
-;; The next big thing is to develop a translation layer so that we can go to/from
-;; the HTTP format and the internal server format as needed.  That'll be on hold
-;; for now as I don't know what internal format will be most convenient.
