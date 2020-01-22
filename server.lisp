@@ -141,9 +141,7 @@
 					     ": ")
 			       acc)))))
 
-(defun join-strings (strs with &optional (firstp t) (acc ""))
-  (if (null strs)
-      acc
-      (if firstp
-	  (join-strings (cdr strs) with nil (concatenate 'string acc (car strs)))
-	  (join-strings (cdr strs) with nil (concatenate 'string acc with (car strs))))))
+(defun join-strings (strs with &optional (acc ""))
+  (if (null (cdr strs))
+      (concatenate 'string acc (car strs))
+      (join-strings (cdr strs) with (concatenate 'string acc (car strs) with))))
