@@ -1,0 +1,40 @@
+* Tasks
+** TODO HTML render engine
+[2020-01-21 Tue]
+
+*** DONE Basic
+Engine to convert
+#+BEGIN_SRC lisp
+(html
+ (head
+  (meta (@ ((charset . "UTF-8"))))
+  (title An Example Page)
+  (author Nicholas Lantz))
+ (body
+  (h2 Hello world!)))
+#+END_SRC
+To this
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=\"UTF-8\">
+    <title>An Example Page</title>
+  </head>
+  <body>
+    <h2>Hello World!</h2>
+  </body>
+</html>
+*** TODO Fix unnecessary spacing
+    [2020-01-21 Tue]
+I think only bare elements need to have spacing, so elements can be
+parsed/rendered without whitespace, but bare words need to be spaced.
+
+** TODO Resource Definition
+   [2020-01-21 Tue]
+I feel like resources defined with URLs are out of date.  But
+unfortunately the WWW demands them as that's how we connect sites
+together.  So, at the bare minimum, we need a publishing mechanism to
+make a resource permanent on a particular server.
+** TODO Preserve casing in html templates
+   [2020-01-21 Tue]
