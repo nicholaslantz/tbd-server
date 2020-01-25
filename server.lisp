@@ -1,5 +1,5 @@
 (defpackage :server
-  (:use :cl :usocket :bordeaux-threads :cl-ppcre :lparallel))
+  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :lparallel))
 (in-package :server)
 
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
