@@ -19,7 +19,7 @@
 
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
-(socket-close *listener*)
+
 ;; When main-handle is called, it blocks until a request is received on
 ;; *listener*.  It should then submit-task to handle it.
 (defun main-handle ()
