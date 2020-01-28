@@ -1,5 +1,6 @@
 (defpackage :xml
-  (:use :cl))
+  (:use :cl :bibliotheca)
+  (:export :as-xml))
 (in-package :xml)
 
 (defparameter *test*
@@ -11,16 +12,11 @@
     (body
      (h2 Hello world!))))
 
+(define-condition document-type-unavailable (error)
+  ((message :initarg :message :reader message)))
+
 (defparameter *headers*
-  '((:html . "<!DOCTYPE html>")))
-
-(defun concat (&rest strings)
-  (apply #'concatenate (append '(string) strings)))
-
-(defun join-strings (strs with &optional (acc ""))
-  (if (null (cdr strs))
-      (concatenate 'string acc (car strs))
-      (join-strings (cdr strs) with (concatenate 'string acc (car strs) with))))
+  '((:html5 . "<!DOCTYPE html>")))
 
 (defun xml-open (sym &optional (attrs nil))
   "Convert symbol to an XML open tag."
@@ -51,10 +47,13 @@
 	  (dc-sym-name (car attr))
 	  (dc-sym-name (cdr attr))))
 
-(defun document (header form)
-  (if-not-let ((str (cdr (assoc header *headers*))))
-	      :header-not-found
-	      (concat str (as-xml form))))
+(defun document (form &key (type (caar *headers*)))
+  (unless (assoc type *headers*)
+    (cerror (format nil "~A is not available, default is ~A, use that instead?"
+		    type (caar *headers*))
+	    'document-type-unavailable)
+    (setq type (caar *headers*)))
+  (concat (assocdr type *headers*) (as-xml form)))
 
 (defun as-xml (form)
   (if (atom form)
