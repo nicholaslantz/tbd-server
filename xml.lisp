@@ -6,7 +6,7 @@
 (defparameter *test*
   '(html
     (head
-     (meta (@ (charset . UTF-8)))
+     (meta (:@ (charset . UTF-8)))
      (title An Example Page)
      (author Nicholas Lantz))
     (body
@@ -36,7 +36,7 @@
   "If form has attributes, return them otherwise nil."
   (when (and (consp form)
 	     (consp (cadr form))
-	     (eq (caadr form) '@))
+	     (eq (caadr form) :@))
     (cadr form)))
 
 (defun attributes (form)

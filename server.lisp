@@ -2,20 +2,17 @@
   (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :lparallel))
 (in-package :server)
 
+(use-package :xml)
+
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
 (defparameter *header*
   (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: close~A~A" +nl+ +nl+ +nl+ +nl+))
 (defparameter *html*
-  "<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset=\"UTF-8\">
-    <title>An Example Page</title>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-  </body>
-</html>")
+  '(html
+    (head
+     (meta (:@ (charset . UTF-8)))
+     (title An Example Page))
+    (body (h1 Hello World))))
 
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
