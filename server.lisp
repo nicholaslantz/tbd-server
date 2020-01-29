@@ -16,7 +16,8 @@
     (body
      (h3 "Hello world")
      (hr (:@ (class . hello)))
-     (p "Black Holes are really cool!"))))
+     (p "Black Holes are really cool!")
+     (p (a (:@ (href . "https://duckduckgo.com?q=black+holes")) "Check it out!")))))
 
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
