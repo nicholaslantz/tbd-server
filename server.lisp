@@ -1,18 +1,22 @@
 (defpackage :server
-  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :lparallel))
+  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :lparallel :xml)
+  (:shadowing-import-from :cl-ppcre :split))
 (in-package :server)
-
-(use-package :xml)
 
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
 (defparameter *header*
   (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: close~A~A" +nl+ +nl+ +nl+ +nl+))
 (defparameter *html*
-  '(html
+  `(html
     (head
      (meta (:@ (charset . UTF-8)))
-     (title An Example Page))
-    (body (h1 Hello World))))
+     (title "An Example Page")
+     (meta (:@ (name . "author") (content . "Nicholas Lantz")))
+     (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0"))))
+    (body
+     (h3 "Hello world")
+     (hr (:@ (class . hello)))
+     (p "Black Holes are really cool!"))))
 
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
@@ -40,7 +44,7 @@
 		      (string-equal (format nil "~C" #\Return) s))))))
       (format #.*standard-output* "~S~%" (parse-request lines))
       (format (socket-stream connection)
-	      "~A~A" *header* *html*)
+	      "~A~A" *header* (document *html*))
       (force-output (socket-stream connection))
       (socket-close connection))))
 
@@ -89,13 +93,6 @@
 (defun list->string (lst)
   (coerce lst 'string))
 
-;; TODO: Handle if stream keeps sending garbage
-(defun read-lines (s &optional (acc nil))
-  "Read all lines until EOF from s"
-  (if-not-let ((line (read-line s)))
-   (reverse acc)
-   (read-lines s (cons line acc))))
-
 (defun strip-left (line &optional (what '(#\Return #\Newline #\Space)))
   (if (member (car line) what)
       (strip-left (cdr line) what)
@@ -106,12 +103,6 @@
 
 (defun strip (line &optional (what '(#\Return #\Newline #\Space)))
   (strip-right (strip-left line what) what))
-
-(defun read-chars-until (s test &optional (acc nil))
-  (let ((c (read-char)))
-    (if (funcall test c)
-	(reverse acc)
-	(read-chars-until s test (cons c acc)))))
 
 (defun read-lines-until (s test &optional (acc nil))
   (let ((line (read-line s)))
@@ -137,8 +128,3 @@
 			 (cons (join-strings (list (string-capitalize (symbol-name field)) val)
 					     ": ")
 			       acc)))))
-
-(defun join-strings (strs with &optional (acc ""))
-  (if (null (cdr strs))
-      (concatenate 'string acc (car strs))
-      (join-strings (cdr strs) with (concatenate 'string acc (car strs) with))))

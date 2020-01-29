@@ -1,6 +1,6 @@
 (defpackage :xml
   (:use :cl :bibliotheca)
-  (:export :as-xml))
+  (:export :as-xml :document))
 (in-package :xml)
 
 (defparameter *test*
@@ -45,7 +45,9 @@
 (defun as-xml-attribute (attr)
   (format nil "~A=\"~A\""
 	  (dc-sym-name (car attr))
-	  (dc-sym-name (cdr attr))))
+	  (cond ((stringp (cdr attr)) (cdr attr))
+		((symbolp (cdr attr)) (dc-sym-name (cdr attr)))
+		(t ""))))
 
 (defun document (form &key (type (caar *headers*)))
   (unless (assoc type *headers*)
@@ -66,4 +68,3 @@
 	(apply #'concat (list (xml-open elt attrs)
 			      (join-strings (mapcar #'as-xml children) " ")
 			      (xml-close elt))))))
-
