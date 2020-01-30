@@ -1,6 +1,7 @@
 (defpackage :routing
   (:use :cl :bibliotheca :cl-ppcre)
-  (:shadowing-import-from :cl-ppcre :split))
+  (:shadowing-import-from :cl-ppcre :split)
+  (:export :route))
 (in-package :routing)
 
 (defparameter *test*
@@ -32,10 +33,18 @@
 (defun filter-tree (pred tree)
   tree)
 
-(defun route (path tree &optional (breadcrumbs nil))
+(defun route (path routes)
+  "TODO: The data formats are tricky to specify."
+  (route-syms
+   (mapcar (lambda (n) (intern (string-upcase n))) (cdr (split "/" path)))
+   routes))
+
+(defun route-syms (path tree &optional (breadcrumbs nil))
   (cond ((endp tree)
 	 :not-found)
-	((endp path)
-	 (list (cdr tree) (reverse breadcrumbs)))
-	((atom tree) (list tree) (reverse breadcrumbs))
-	(t (route (cdr path) (assoc (car path) (cdr tree)) (cons (car path) breadcrumbs)))))
+	((or (endp path) (atom (cdr tree)))
+	 (values (list (cdr tree) path) (reverse breadcrumbs)))
+	(t (route-syms
+	    (cdr path)
+	    (assoc (car path) (cdr tree))
+	    (cons (car path) breadcrumbs)))))
