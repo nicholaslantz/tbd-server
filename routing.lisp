@@ -6,9 +6,49 @@
 
 (defparameter *test*
   '(root
-    (about . serve-about)
-    (www . file-server)
-    (users . render-user)))
+    (files
+     (:get (:path) root-files-get)
+     (:post (:path)))
+    (about
+     (us)
+     (careers))))
+
+;; Do we really want to copy the function names for each of these?
+;; The decorator pattern at least reduces that boilerplate.  I could
+;; define a function that generates this tree depending on what
+;; has been defined so for.  That's not too bad.  Hmm... I still get to
+;; salvage my work as the tree still exists, I just don't define it
+;; explicitly.
+
+'((user 'string) (project 'string) (page 'string))
+'((user 'string) (project 'string))
+'(root
+  ((user string)
+   ()))
+
+(defmacro defroute (name path &key (method :get) (routes *test*) &body body)
+  (progn
+    (add-branch path *test*)
+    (defun name)))
+
+(defroute get-user-project (users name* project*)
+	  :users)
+(defroute set-user-project (users name* project*) :method :post)
+(defroute get-user (users name*))
+
+'(users
+  (name*
+   :get get-user
+   (project*
+    :get get-user-project
+    :post set-user-project)))
+
+
+(defun add-branch (path tree)
+  (if (not (eql (car path) (car tree)))
+      (append path tree)
+      (let ((child (find (cadr path) (cdr tree) :key #'car)))
+	(append (remove child tree) (list (add-branch (cdr path) child))))))
 
 ;; The below seemed useful, but they aren't yet.
 (defun map-tree (fn tree)
