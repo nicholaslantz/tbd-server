@@ -18,11 +18,21 @@
 ;; So I want relevant routing functions in here, but I want the actual routes
 ;; somewhere else, the main server file for now I suppose.
 (defparameter *test* '(root
-		       (hello . "Hello!")
+		       (hello "Hello!")
 		       (users
-			(nick . "nick")
-			(evan . "evan")
-			(joe . "joe"))))
+			(nick "nick")
+			(evan "evan")
+			(joe "joe"))))
+
+;; In the case of users, it seems a little silly to have a different render
+;; routine for each user.  I should allow more detail to be able to be passed
+;; to the render engine.  For instance:
+'(defun render-user (user))
+;; What would be really cool is if the extra detail is automatically passed into
+;; the function through the params.  The render always has the option to fail
+;; if the user doesn't exist or whatever.  So what now?
+;;
+;; This problem is also perfect for OO as I have it set up.
 
 (defparameter *test-tree* '(a
 			    (b c)
@@ -47,15 +57,23 @@
 		      tree)))
 	(reduce fn results))))
 
-(defun filter-tree (pred tree))
+;; TODO
+(defun filter-tree (pred tree)
+  tree)
 
-'(users nick)
-(defun path-exists (path tree)
+(defun path-exists (path tree &key (best-match-p t) (best-path nil))
   (if (endp path)
       tree
       (if-not-let ((next (assoc (car path) (cdr tree))))
-		  nil
-		  (path-exists (cdr path) next))))
+		  (if (not best-match-p)
+		      nil
+		      (list best-path path))
+		  (path-exists (cdr path) next
+			       :best-match-p best-match-p
+			       :best-path (cons (car next) best-path)))))
+
+(defun path-best-match (path tree)
+  (-path-best-match path tree))
 
 (defun route (path &key (route-tree *test*))
   (let ((path-syms (mapcar
