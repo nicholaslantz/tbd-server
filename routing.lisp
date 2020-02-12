@@ -4,20 +4,9 @@
   (:export :route))
 (in-package :routing)
 
-(defparameter *test*
-  '(root
-    (files
-     (:get (:path) root-files-get)
-     (:post (:path)))
-    (about
-     (us)
-     (careers))))
-
-'((user 'string) (project 'string) (page 'string))
-'((user 'string) (project 'string))
-'(root
-  ((user string)
-   ()))
+;; I still need to decide on the wildcard system.
+;;
+;; I'm leaning towards * just matching everything for now.
 
 (defmacro defroute (name path &key (method :get) (routes *test*) &body body)
   (progn
@@ -29,29 +18,38 @@
 (defroute set-user-project (users name* project*) :method :post)
 (defroute get-user (users name*))
 
-'(users
-  (name*
-   :get get-user
-   (project*
-    :get get-user-project
-    :post set-user-project)))
+(defparameter *routes* nil)
 
-;; Dude, this could get really complex and magical if I want it to...
-(defroute (about) about () :get
-	  "hello.")
-(defroute (users) user-projects (user project) :get
-	  "User 1, project 5.")
+;; FIXME: The (list (list ,method ... shouldn't need to be there,
+;;        find a way to use quotes/commas.
+(defmacro defroute (path lambda-list handler &key (method :get) (tree '*routes*))
+  `(setf ,tree
+	 (path-merge ,tree (append ',path (list (list ,method
+						      (lambda ,lambda-list ,handler)))))))
+
+(defroute (index) () 
+  "Home Page.")
+
+(defroute (about) ()
+  "About us")
+
+(defroute (about careers) ()
+  "Come work for us!")
+
+(defroute (users * *) (user project)
+  (format nil "~a: ~a" user project))
 
 (defparameter *test*
-  '((about (:get (sym)))
-    (users (* (* (:get (sym)))))))
+  '((about (:get sym))
+    (users (* (* (:get sym))))
+    (deeply (nested (branch (:get sym))))))
 
 (defparameter *test2*
   '((users (* (* (:post sym))))
     (about
-     (:post (hacked))
-     (:create (haxor))
-     (:get (new)))))
+     (:post hacked)
+     (:create haxor)
+     (:get new))))
 
 (defun shallow-merge (&rest alists)
   (labels ((rec (t1 t2)
@@ -105,22 +103,5 @@
 		      tree)))
 	(reduce fn results))))
 
-;; TODO
 (defun filter-tree (pred tree)
   tree)
-
-(defun route (path routes)
-  "TODO: The data formats are tricky to specify."
-  (route-syms
-   (mapcar (lambda (n) (intern (string-upcase n))) (cdr (split "/" path)))
-   routes))
-
-(defun route-syms (path tree &optional (breadcrumbs nil))
-  (cond ((endp tree)
-	 :not-found)
-	((or (endp path) (atom (cdr tree)))
-	 (values (list (cdr tree) path) (reverse breadcrumbs)))
-	(t (route-syms
-	    (cdr path)
-	    (assoc (car path) (cdr tree))
-	    (cons (car path) breadcrumbs)))))
