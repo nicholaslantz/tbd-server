@@ -13,13 +13,6 @@
      (us)
      (careers))))
 
-;; Do we really want to copy the function names for each of these?
-;; The decorator pattern at least reduces that boilerplate.  I could
-;; define a function that generates this tree depending on what
-;; has been defined so for.  That's not too bad.  Hmm... I still get to
-;; salvage my work as the tree still exists, I just don't define it
-;; explicitly.
-
 '((user 'string) (project 'string) (page 'string))
 '((user 'string) (project 'string))
 '(root
@@ -42,6 +35,55 @@
    (project*
     :get get-user-project
     :post set-user-project)))
+
+;; Dude, this could get really complex and magical if I want it to...
+(defroute (about) about () :get
+	  "hello.")
+(defroute (users) user-projects (user project) :get
+	  "User 1, project 5.")
+
+(defparameter *test*
+  '((about
+     :get sym)
+    (users
+     (*
+      (*
+       :get sym)))))
+
+(defparameter *test2*
+  '((about
+     :post sym)))
+
+(defparameter *test3*
+  '((careers
+     :get sym)))
+
+(defun shallow-merge (&rest alists)
+  (labels ((rec (t1 t2)
+	     (if (null t2)
+		 t1
+		 (if (assoc (caar t2) t1)
+		     (rec (cons (car t2)
+				(remove (assoc (caar t2) t1)
+					t1
+					:test #'equal))
+			  (cdr t2))
+		     (rec (cons (car t2) t1) (cdr t2))))))
+    (reduce #'rec alists)))
+
+(defun deep-merge (&rest trees)
+  (labels ((rec-merge (t1 t2)
+	     (if (and (consp t1) (consp t2))
+		 (deep-merge t1 t2)
+		 t2)))
+    (if (consp trees)
+	(reduce (lambda (a b) (rec-merge a b)) trees)
+	(car trees))))
+
+(defun deep-merge (&rest trees)
+  (labels ((rec (&rest ts)
+	     (if (some (lambda (a) (consp a)) ts)
+		 (apply rec ts))))))
 
 
 (defun add-branch (path tree)
