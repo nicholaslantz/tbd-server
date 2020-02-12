@@ -43,48 +43,40 @@
 	  "User 1, project 5.")
 
 (defparameter *test*
-  '((about
-     :get sym)
-    (users
-     (*
-      (*
-       :get sym)))))
+  '((about (:get (sym)))
+    (users (* (* (:get (sym)))))))
 
 (defparameter *test2*
-  '((about
-     :post sym)))
-
-(defparameter *test3*
-  '((careers
-     :get sym)))
+  '((users (* (* (:post sym))))
+    (about
+     (:post (hacked))
+     (:create (haxor))
+     (:get (new)))))
 
 (defun shallow-merge (&rest alists)
   (labels ((rec (t1 t2)
-	     (if (null t2)
-		 t1
-		 (if (assoc (caar t2) t1)
-		     (rec (cons (car t2)
-				(remove (assoc (caar t2) t1)
-					t1
-					:test #'equal))
-			  (cdr t2))
-		     (rec (cons (car t2) t1) (cdr t2))))))
+	     (cond ((null t2) t1)
+		   ((assoc (caar t2) t1)
+		    (rec (cons (car t2)
+			       (remove (assoc (caar t2) t1)
+				       t1
+				       :test #'equal))
+			 (cdr t2)))
+		   (t (rec (cons (car t2) t1) (cdr t2))))))
     (reduce #'rec alists)))
 
-(defun deep-merge (&rest trees)
-  (labels ((rec-merge (t1 t2)
-	     (if (and (consp t1) (consp t2))
-		 (deep-merge t1 t2)
-		 t2)))
-    (if (consp trees)
-	(reduce (lambda (a b) (rec-merge a b)) trees)
-	(car trees))))
-
-(defun deep-merge (&rest trees)
-  (labels ((rec (&rest ts)
-	     (if (some (lambda (a) (consp a)) ts)
-		 (apply rec ts))))))
-
+(defun deep-merge (t1 t2)
+  (cond ((null t2) t1)
+	((assoc (caar t2) t1)
+	 (cons (cons (caar t2)
+		     (if (atom (car (assocdr (caar t2) t1)))
+			 (append (cdar t2) (assocdr (car t2) t1))
+			 (deep-merge (assocdr (caar t2) t1) (cdar t2))))
+	       (deep-merge (remove (assoc (caar t2) t1)
+				   t1
+				   :test #'equal)
+			   (cdr t2))))
+	(t (deep-merge (cons (car t2) t1) (cdr t2)))))
 
 (defun add-branch (path tree)
   (if (not (eql (car path) (car tree)))
