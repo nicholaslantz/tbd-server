@@ -78,11 +78,13 @@
 			   (cdr t2))))
 	(t (deep-merge (cons (car t2) t1) (cdr t2)))))
 
-(defun add-branch (path tree)
-  (if (not (eql (car path) (car tree)))
-      (append path tree)
-      (let ((child (find (cadr path) (cdr tree) :key #'car)))
-	(append (remove child tree) (list (add-branch (cdr path) child))))))
+(defun path-merge (tree path)
+  (deep-merge tree (list (reduce #'list path :from-end t))))
+
+(defun path-exists (tree path)
+  (cond ((endp path) (if (null tree) t tree))
+	((null (assoc (car path) tree)) nil)
+	(t (path-exists (assocdr (car path) tree) (cdr path)))))
 
 ;; The below seemed useful, but they aren't yet.
 (defun map-tree (fn tree)
