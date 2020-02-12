@@ -1,43 +1,7 @@
 (defpackage :routing
   (:use :cl :bibliotheca :cl-ppcre)
-  (:shadowing-import-from :cl-ppcre :split)
-  (:export :route))
+  (:shadowing-import-from :cl-ppcre :split))
 (in-package :routing)
-
-;; I still need to decide on the wildcard system.
-;;
-;; I'm leaning towards * just matching everything for now.
-
-(defmacro defroute (name path &key (method :get) (routes *test*) &body body)
-  (progn
-    (add-branch path *test*)
-    (defun name)))
-
-(defroute get-user-project (users name* project*)
-	  :users)
-(defroute set-user-project (users name* project*) :method :post)
-(defroute get-user (users name*))
-
-(defparameter *routes* nil)
-
-;; FIXME: The (list (list ,method ... shouldn't need to be there,
-;;        find a way to use quotes/commas.
-(defmacro defroute (path lambda-list handler &key (method :get) (tree '*routes*))
-  `(setf ,tree
-	 (path-merge ,tree (append ',path (list (list ,method
-						      (lambda ,lambda-list ,handler)))))))
-
-(defroute (index) () 
-  "Home Page.")
-
-(defroute (about) ()
-  "About us")
-
-(defroute (about careers) ()
-  "Come work for us!")
-
-(defroute (users * *) (user project)
-  (format nil "~a: ~a" user project))
 
 (defparameter *test*
   '((about (:get sym))
@@ -105,3 +69,24 @@
 
 (defun filter-tree (pred tree)
   tree)
+
+(defparameter *routes* nil)
+
+;; FIXME: The (list (list ,method ... shouldn't need to be there,
+;;        find a way to use quotes/commas.
+(defmacro defroute (path lambda-list handler &key (method :get) (tree '*routes*))
+  `(setf ,tree
+	 (path-merge ,tree (append ',path (list (list ,method
+						      (lambda ,lambda-list ,handler)))))))
+
+(defroute (index) () 
+  "Home Page.")
+
+(defroute (about) ()
+  "About us")
+
+(defroute (about careers) ()
+  "Come work for us!")
+
+(defroute (users * *) (user project)
+  (format nil "~a: ~a" user project))
