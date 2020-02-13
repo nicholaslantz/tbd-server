@@ -43,10 +43,28 @@
 (defun path-merge (tree path)
   (deep-merge tree (list (reduce #'list path :from-end t))))
 
+;; This funcion should not prune more than it has to.  That is,
+;; it should only prune leaves, never branches of the tree.
+(defun path-prune (tree path)
+  "TODO"
+  (list tree path))
+
 (defun path-exists (tree path)
   (cond ((endp path) (if (null tree) t tree))
 	((null (assoc (car path) tree)) nil)
 	(t (path-exists (assocdr (car path) tree) (cdr path)))))
+
+(defun path-exists-wildcard (tree path &optional (acc nil))
+  (cond ((endp path) (values (car tree) (nreverse acc)))
+	((null (assoc (car path) tree))
+	 (if (and (assoc '* tree) (not (keywordp (car path))))
+	     (path-exists-wildcard (assocdr '* tree)
+				   (cdr path)
+				   (cons (car path) acc))
+	     nil))
+	(t (path-exists-wildcard (assocdr (car path) tree)
+				 (cdr path)
+				 acc))))
 
 ;; The below seemed useful, but they aren't yet.
 (defun map-tree (fn tree)
@@ -70,16 +88,29 @@
 (defun filter-tree (pred tree)
   tree)
 
+(define-condition path-already-exists (error)
+  ()
+  (:report (lambda (condition stream)
+	     (declare (ignore condition))
+	     (format stream "Path already exists in the route tree."))))
+
 (defparameter *routes* nil)
 
 ;; FIXME: The (list (list ,method ... shouldn't need to be there,
 ;;        find a way to use quotes/commas.
 (defmacro defroute (path lambda-list handler &key (method :get) (tree '*routes*))
-  `(setf ,tree
-	 (path-merge ,tree (append ',path (list (list ,method
-						      (lambda ,lambda-list ,handler)))))))
-
-(defroute (index) () 
+  (let ((full-path (gensym)))
+    (setf full-path (append path (list method)))
+    `(progn
+       (when (path-exists ,tree ',full-path)
+	 (cerror "Modify the entry"
+		 'path-already-exists))
+       (setf ,tree
+	     (path-merge ,tree (append
+				',path
+				(list (list ,method
+					    (lambda ,lambda-list ,handler)))))))))
+(defroute () () 
   "Home Page.")
 
 (defroute (about) ()
@@ -90,3 +121,8 @@
 
 (defroute (users * *) (user project)
   (format nil "~a: ~a" user project))
+
+(defun route (path &optional (method :get) (tree *routes*))
+  (multiple-value-bind (handler vars)
+      (path-exists-wildcard tree (append path (list method)))
+    (apply handler vars)))
