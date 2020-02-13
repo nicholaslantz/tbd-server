@@ -98,6 +98,7 @@
 
 ;; FIXME: The (list (list ,method ... shouldn't need to be there,
 ;;        find a way to use quotes/commas.
+;; FIXME: the HANDLER argument should be a &body
 (defmacro defroute (path lambda-list handler &key (method :get) (tree '*routes*))
   (let ((full-path (gensym)))
     (setf full-path (append path (list method)))
