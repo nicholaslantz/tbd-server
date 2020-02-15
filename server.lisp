@@ -7,38 +7,49 @@
 (defparameter *header*
   (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: close~A~A" +nl+ +nl+ +nl+ +nl+))
 
+(defun html-head (title)
+  `(head
+    (meta (:@ (charset . UTF-8)))
+    (title ,title)
+    (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0")))))
+
+(defun html-banner ()
+  '((h1 "TBD Server")
+    (hr)))
+
+(defun html-foot ()
+  '((p "(c) 2020")))
+
+(defun html-page (title content)
+  `(html
+    ,(html-head title)
+    (body
+     ,@(html-banner)
+     ,@content
+     ,@(html-foot))))
+
 (defroute () ()
     ()
   (xml:document
-   '(html
-     (head
-      (meta (:@ (charset . UTF-8)))
-      (title "Home Page")
-      (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0"))))
-     (body (h1 "Home Page")))))
+   (html-page "Index"
+	      '((h3 "Index")))))
 
 (defroute (random) ()
     ()
   (xml:document
-   `(html
-     (head
-      (meta (:@ (charset . UTF-8)))
-      (title "Random Numbers")
-      (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0"))))
-     (body
-      (h1 ,(random 100))))))
+   (html-page "Random Numbers"
+	      `((h3 "Randomness")
+		'(p ,(let ((nums nil))
+		       (dotimes (i 100)
+			 (push (random 100) nums))
+		       (join-strings (mapcar #'princ-to-string nums) ", ")))))))
 
 (defroute (about) ()
     ()
   (xml:document
-   '(html
-     (head
-      (meta (:@ (charset . UTF-8)))
-      (title "About TBD Server")
-      (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.00"))))
-     (body
-      (h1 "About TBD")
-      (p "This is a web server and web application framework written in Common Lisp")))))
+   (html-page "About"
+	      '((h3 "About TBD")
+		(p "This is a web server and web application framework written in Common Lisp")))))
 
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
