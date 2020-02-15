@@ -54,6 +54,7 @@
 	((null (assoc (car path) tree)) nil)
 	(t (path-exists (assocdr (car path) tree) (cdr path)))))
 
+;; TODO: make wildcar symbol configurable
 (defun path-exists-wildcard (tree path &optional (acc nil))
   (cond ((endp path) (values (car tree) (nreverse acc)))
 	((null (assoc (car path) tree))
