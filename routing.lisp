@@ -1,19 +1,10 @@
 (defpackage :routing
   (:use :cl :bibliotheca :cl-ppcre)
-  (:shadowing-import-from :cl-ppcre :split))
+  (:shadowing-import-from :cl-ppcre :split)
+  (:export :route :defroute))
 (in-package :routing)
 
-(defparameter *test*
-  '((about (:get sym))
-    (users (* (* (:get sym))))
-    (deeply (nested (branch (:get sym))))))
-
-(defparameter *test2*
-  '((users (* (* (:post sym))))
-    (about
-     (:post hacked)
-     (:create haxor)
-     (:get new))))
+;; TODO: Lots of unused code in here, remove it once it's refiled.
 
 (defun shallow-merge (&rest alists)
   (labels ((rec (t1 t2)
@@ -137,4 +128,6 @@
 		   (mapcar #'intern))))
     (multiple-value-bind (handler vars)
 	(path-exists-wildcard tree (append sympath (list method)))
-      (apply handler vars))))
+      (if handler
+	  (apply handler vars)
+	  "Not Found"))))
