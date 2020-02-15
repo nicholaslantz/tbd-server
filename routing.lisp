@@ -98,8 +98,9 @@
 
 ;; FIXME: The (list (list ,method ... shouldn't need to be there,
 ;;        find a way to use quotes/commas.
-;; FIXME: the HANDLER argument should be a &body
-(defmacro defroute (path lambda-list handler &key (method :get) (tree '*routes*))
+(defmacro defroute (path lambda-list
+		    (&key (method :get) (tree '*routes*))
+		    &body handler)
   (let ((full-path (gensym)))
     (setf full-path (append path (list method)))
     `(progn
@@ -110,20 +111,29 @@
 	     (path-merge ,tree (append
 				',path
 				(list (list ,method
-					    (lambda ,lambda-list ,handler)))))))))
-(defroute () () 
+					    (lambda ,lambda-list ,@handler)))))))))
+(defroute () ()
+    ()
   "Home Page.")
 
 (defroute (about) ()
+    ()
   "About us")
 
 (defroute (about careers) ()
+    ()
   "Come work for us!")
 
 (defroute (users * *) (user project)
+    ()
   (format nil "~a: ~a" user project))
 
 (defun route (path &optional (method :get) (tree *routes*))
-  (multiple-value-bind (handler vars)
-      (path-exists-wildcard tree (append path (list method)))
-    (apply handler vars)))
+  (let ((sympath (~>> path
+		   (split "/")
+		   (remove-if (lambda (n) (string= "" n)))
+		   (mapcar #'string-upcase)
+		   (mapcar #'intern))))
+    (multiple-value-bind (handler vars)
+	(path-exists-wildcard tree (append sympath (list method)))
+      (apply handler vars))))
