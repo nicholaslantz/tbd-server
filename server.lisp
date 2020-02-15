@@ -1,23 +1,44 @@
 (defpackage :server
-  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :lparallel :xml)
+  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :xml :routing)
   (:shadowing-import-from :cl-ppcre :split))
 (in-package :server)
 
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
 (defparameter *header*
   (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: close~A~A" +nl+ +nl+ +nl+ +nl+))
-(defparameter *html*
-  `(html
-    (head
-     (meta (:@ (charset . UTF-8)))
-     (title "An Example Page")
-     (meta (:@ (name . "author") (content . "Nicholas Lantz")))
-     (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0"))))
-    (body
-     (h3 "Hello world")
-     (hr (:@ (class . hello)))
-     (p "Black Holes are really cool!")
-     (p (a (:@ (href . "https://duckduckgo.com?q=black+holes")) "Check it out!")))))
+
+(defroute () ()
+    ()
+  (xml:document
+   '(html
+     (head
+      (meta (:@ (charset . UTF-8)))
+      (title "Home Page")
+      (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0"))))
+     (body (h1 "Home Page")))))
+
+(defroute (random) ()
+    ()
+  (xml:document
+   `(html
+     (head
+      (meta (:@ (charset . UTF-8)))
+      (title "Random Numbers")
+      (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.0"))))
+     (body
+      (h1 ,(random 100))))))
+
+(defroute (about) ()
+    ()
+  (xml:document
+   '(html
+     (head
+      (meta (:@ (charset . UTF-8)))
+      (title "About TBD Server")
+      (meta (:@ (name . "viewport") (content . "width=device-width, initial-scale=1.00"))))
+     (body
+      (h1 "About TBD")
+      (p "This is a web server and web application framework written in Common Lisp")))))
 
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
@@ -33,7 +54,6 @@
 
 (defparameter *listener-thread* (make-thread #'main-handle :name "listener thread"))
 
-;; When connection is received, read all lines, parse, and return welcome page
 (eval-when (:compile-toplevel)
   (defun handle (connection)
     (let ((lines
@@ -43,11 +63,15 @@
 		    (socket-stream connection)
 		    (lambda (s)
 		      (string-equal (format nil "~C" #\Return) s))))))
-      (format #.*standard-output* "~S~%" (parse-request lines))
-      (format (socket-stream connection)
-	      "~A~A" *header* (document *html*))
-      (force-output (socket-stream connection))
-      (socket-close connection))))
+      (let* ((req (parse-request lines))
+	     (method (nth 0 (car req)))
+	     (path   (nth 1 (car req)))
+	     (proto  (nth 2 (car req))))
+	(format #.*standard-output* "~S~%" (parse-request lines))
+	(format (socket-stream connection)
+		"~A~A" *header* (route path (sym->keyword method)))
+	(force-output (socket-stream connection))
+	(socket-close connection)))))
 
 (defun parse-request (req)
   (cons (parse-head (car req))
@@ -94,23 +118,6 @@
 (defun list->string (lst)
   (coerce lst 'string))
 
-(defun strip-left (line &optional (what '(#\Return #\Newline #\Space)))
-  (if (member (car line) what)
-      (strip-left (cdr line) what)
-      line))
-
-(defun strip-right (line &optional (what '(#\Return #\Newline #\Space)))
-  (nreverse (strip-left (reverse line) what)))
-
-(defun strip (line &optional (what '(#\Return #\Newline #\Space)))
-  (strip-right (strip-left line what) what))
-
-(defun read-lines-until (s test &optional (acc nil))
-  (let ((line (read-line s)))
-    (if (funcall test line)
-	(reverse acc)
-	(read-lines-until s test (cons line acc)))))
-
 (defun response (resp)
   (join-strings (cons (response-header (car resp))
 		      (response-fields (cdr resp)))
@@ -129,3 +136,5 @@
 			 (cons (join-strings (list (string-capitalize (symbol-name field)) val)
 					     ": ")
 			       acc)))))
+(defun sym->keyword (sym)
+  (intern (symbol-name sym) (find-package "KEYWORD")))
