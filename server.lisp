@@ -1,11 +1,16 @@
 (defpackage :server
-  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :xml :routing)
+  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :xml :routing :date)
   (:shadowing-import-from :cl-ppcre :split))
 (in-package :server)
 
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
 (defparameter *header*
-  (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: close~A~A" +nl+ +nl+ +nl+ +nl+))
+  (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: Keep-Alive~A~A" +nl+ +nl+ +nl+ +nl+))
+
+(defparameter *status-codes*
+  '((ok . 200)
+    (not-found . 404)
+    (internal-server-error . 500)))
 
 (defun html-head (title)
   `(head
@@ -51,6 +56,19 @@
 	      '((h3 "About TBD")
 		(p "This is a web server and web application framework written in Common Lisp")))))
 
+(defun generate-response-header (status content-type &optional (date (datetime)))
+  (let ((status-text
+	 (if (= status 200)
+	     "OK"
+	     (substitute #\Space #\- (string-capitalize (assocdr status *status-codes*))))))
+    (response (list (list 'http/1.1 status status-text)
+		    (cons 'server "TBD")
+		    ;(cons 'keep-alive "timeout=5, max=1000")
+		    (cons 'date date)
+		    (cons 'content-type content-type)
+		    (cons 'content-encoding "identity")
+		    (cons 'connection "Close")))))
+
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
 
@@ -79,8 +97,10 @@
 	     (path   (nth 1 (car req)))
 	     (proto  (nth 2 (car req))))
 	(format #.*standard-output* "~S~%" (parse-request lines))
-	(format (socket-stream connection)
-		"~A~A" *header* (route path (sym->keyword method)))
+	(format (socket-stream connection) "~A~A~A~A"
+		(generate-response-header 200 "text/html")
+		+nl+ +nl+
+		(route path (sym->keyword method)))
 	(force-output (socket-stream connection))
 	(socket-close connection)))))
 
