@@ -104,21 +104,6 @@
 				',path
 				(list (list ,method
 					    (lambda ,lambda-list ,@handler)))))))))
-(defroute () ()
-    ()
-  "Home Page.")
-
-(defroute (about) ()
-    ()
-  "About us")
-
-(defroute (about careers) ()
-    ()
-  "Come work for us!")
-
-(defroute (users * *) (user project)
-    ()
-  (format nil "~a: ~a" user project))
 
 ;; TODO: The handler also needs to generate a response, we won't
 ;; know how to respond until we try to handle it.
