@@ -1,16 +1,9 @@
 (defpackage :server
-  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :xml :routing :date)
+  (:use :cl :bibliotheca :usocket :bordeaux-threads :cl-ppcre :xml :routing :date :headers)
   (:shadowing-import-from :cl-ppcre :split))
 (in-package :server)
 
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
-(defparameter *header*
-  (format nil "HTTP/1.1 200 OK~AContent-Type: text/html~AConnection: Keep-Alive~A~A" +nl+ +nl+ +nl+ +nl+))
-
-(defparameter *status-codes*
-  '((ok . 200)
-    (not-found . 404)
-    (internal-server-error . 500)))
 
 (defun html-head (title)
   `(head
@@ -56,19 +49,6 @@
 	      '((h3 "About TBD")
 		(p "This is a web server and web application framework written in Common Lisp")))))
 
-(defun generate-response-header (status content-type &optional (date (datetime)))
-  (let ((status-text
-	 (if (= status 200)
-	     "OK"
-	     (substitute #\Space #\- (string-capitalize (assocdr status *status-codes*))))))
-    (response (list (list 'http/1.1 status status-text)
-		    (cons 'server "TBD")
-		    ;(cons 'keep-alive "timeout=5, max=1000")
-		    (cons 'date date)
-		    (cons 'content-type content-type)
-		    (cons 'content-encoding "identity")
-		    (cons 'connection "Close")))))
-
 ;; Return fn that when called will block until new connection is received.
 (defparameter *listener* (socket-listen #(127 0 0 1) 8200))
 
@@ -98,7 +78,7 @@
 	     (proto  (nth 2 (car req))))
 	(format #.*standard-output* "~S~%" (parse-request lines))
 	(format (socket-stream connection) "~A~A~A~A"
-		(generate-response-header 200 "text/html")
+		(header 200)
 		+nl+ +nl+
 		(route path (sym->keyword method)))
 	(force-output (socket-stream connection))
@@ -149,23 +129,5 @@
 (defun list->string (lst)
   (coerce lst 'string))
 
-(defun response (resp)
-  (join-strings (cons (response-header (car resp))
-		      (response-fields (cdr resp)))
-		+nl+))
-
-(defun response-header (resp-head)
-  (join-strings (mapcar #'princ-to-string resp-head)
-		" "))
-
-(defun response-fields (resp-fields &optional acc)
-  (if (null resp-fields)
-      acc
-      (let ((field (caar resp-fields))
-	    (val (cdar resp-fields)))
-	(response-fields (cdr resp-fields)
-			 (cons (join-strings (list (string-capitalize (symbol-name field)) val)
-					     ": ")
-			       acc)))))
 (defun sym->keyword (sym)
   (intern (symbol-name sym) (find-package "KEYWORD")))

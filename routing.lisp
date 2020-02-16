@@ -120,6 +120,8 @@
     ()
   (format nil "~a: ~a" user project))
 
+;; TODO: The handler also needs to generate a response, we won't
+;; know how to respond until we try to handle it.
 (defun route (path &optional (method :get) (tree *routes*))
   (let ((sympath (~>> path
 		   (split "/")
