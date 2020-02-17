@@ -76,16 +76,19 @@
 		      (string-equal (format nil "~C" #\Return) s))))))
       (let* ((req (parse-request lines))
 	     (method (nth 0 (car req)))
-	     (path   (nth 1 (car req)))
-	     (proto  (nth 2 (car req))))
+	     (path   (nth 1 (car req))))
 	(format #.*standard-output* "~S~%" (parse-request lines))
 	(multiple-value-bind (head body)
 	    (route path (sym->keyword method) *site-tree*)
 	  (if body
-	      (format (socket-stream connection) "~A~A~A~A" head +nl+ +nl+ body)
+	      (format (socket-stream connection) "~A~A~A~X~A~A~A~X~A~A"
+		      head +nl+ +nl+
+		      (length body) +nl+ body +nl+
+		      0 +nl+ +nl+)
 	      (format (socket-stream connection) "~A~A~A" head +nl+ +nl+))
 	  (force-output (socket-stream connection))
-	  (socket-close connection))))))
+	  ;;(socket-close connection)
+	  (handle connection))))))
 
 (defun parse-request (req)
   (cons (parse-head (car req))

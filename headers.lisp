@@ -56,9 +56,11 @@
 	  (warn (format nil "~A not found in *http-status-codes*" status) 'status-not-found)
 	  (internal-server-error-header))
 	(form-header 'http/1.1 number text
-		     (cons 'connection "Close")
+		     (cons 'connection "Keep-Alive")
+		     (cons 'transfer-encoding "chunked")
 		     (cons 'content-encoding "identity")
 		     (cons 'content-type content-type)
 		     (cons 'date (datetime date))
+		     (cons 'keep-alive "timeout=5, max=1000")
 		     (cons 'server "TBD")))))
 
