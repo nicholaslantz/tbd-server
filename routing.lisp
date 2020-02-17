@@ -1,5 +1,5 @@
 (defpackage :routing
-  (:use :cl :bibliotheca :cl-ppcre)
+  (:use :cl :bibliotheca :cl-ppcre :headers)
   (:shadowing-import-from :cl-ppcre :split)
   (:export :route :defroute))
 (in-package :routing)
@@ -116,5 +116,10 @@
     (multiple-value-bind (handler vars)
 	(path-exists-wildcard tree (append sympath (list method)))
       (if handler
-	  (apply handler vars)
-	  "Not Found"))))
+	  (multiple-value-bind (head body)
+	      (apply handler vars)
+	    (unless body
+	      (setf body head)
+	      (setf head (header 200)))
+	    (values head body))
+	  (values (header :not-found) nil)))))

@@ -5,6 +5,8 @@
 
 (defconstant +nl+ (coerce #(#\Return #\Newline) 'string))
 
+(defparameter *site-tree* nil)
+
 (defun html-head (title)
   `(head
     (meta (:@ (charset . UTF-8)))
@@ -27,13 +29,13 @@
      ,@(html-foot))))
 
 (defroute () ()
-    ()
+    (:tree *site-tree*)
   (xml:document
    (html-page "Index"
 	      '((h3 "Index")))))
 
 (defroute (random) ()
-    ()
+    (:tree *site-tree*)
   (xml:document
    (html-page "Random Numbers"
 	      `((h3 "Randomness")
@@ -43,7 +45,7 @@
 		       (join-strings (mapcar #'princ-to-string nums) ", ")))))))
 
 (defroute (about) ()
-    ()
+    (:tree *site-tree*)
   (xml:document
    (html-page "About"
 	      '((h3 "About TBD")
@@ -77,12 +79,13 @@
 	     (path   (nth 1 (car req)))
 	     (proto  (nth 2 (car req))))
 	(format #.*standard-output* "~S~%" (parse-request lines))
-	(format (socket-stream connection) "~A~A~A~A"
-		(header 200)
-		+nl+ +nl+
-		(route path (sym->keyword method)))
-	(force-output (socket-stream connection))
-	(socket-close connection)))))
+	(multiple-value-bind (head body)
+	    (route path (sym->keyword method) *site-tree*)
+	  (if body
+	      (format (socket-stream connection) "~A~A~A~A" head +nl+ +nl+ body)
+	      (format (socket-stream connection) "~A~A~A" head +nl+ +nl+))
+	  (force-output (socket-stream connection))
+	  (socket-close connection))))))
 
 (defun parse-request (req)
   (cons (parse-head (car req))
